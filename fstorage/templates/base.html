@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}File Storage App{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.pixabay.com/photo/2016/05/18/19/32/folder-1401617_640.png" type="image/png">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Dropzone CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --dark-color: #1b263b;
+            --light-color: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .sidebar {
+            background-color: var(--dark-color);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .file-card {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .file-icon {
+            font-size: 2.5rem;
+            text-align: center;
+            padding: 1rem 0;
+        }
+        
+        .dropzone {
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .dropzone .dz-message {
+            margin: 3em 0;
+        }
+        
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            background-color: #f5f7fa;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+        }
+        
+        .loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Navbar styling for guest users */
+        .navbar-guest {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 15px 0;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="d-flex align-items-center justify-content-center mb-4">
+                        <i class="bi bi-cloud-fill fs-4 me-2 text-primary"></i>
+                        <h5 class="text-white mb-0">File Storage</h5>
+                    </div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('dashboard') }}">
+                                <i class="bi bi-house-door me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="bi bi-cloud-upload me-2"></i>Upload Files
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 position-relative">
+                <!-- Top Right User Dropdown -->
+                <div class="dropdown position-absolute top-0 end-0 mt-3 me-4" style="z-index: 10;">
+                    <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle d-flex align-items-center" 
+                       id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                        <!-- Use Gravatar image if available, otherwise fallback icon -->
+                        <img src="{{ gravatar_url | default('https://via.placeholder.com/32/007bff/ffffff?text=?') }}" 
+                             alt="User profile" width="32" height="32" class="rounded-circle me-2">
+                        <span class="d-none d-sm-inline">{{ current_user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end text-small shadow" aria-labelledby="dropdownUser">
+                        <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person-fill me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign out</a></li>
+                    </ul>
+                </div>
+                <!-- End Top Right User Dropdown -->
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+        <!-- Navbar for non-authenticated users -->
+        <nav class="navbar navbar-expand-lg navbar-light navbar-guest">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                    <i class="bi bi-cloud-fill fs-4 me-2 text-primary"></i>
+                    <span class="fw-bold">File Storage App</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-primary text-white ms-2" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Auth content block for login and register pages -->
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <!-- Loader -->
+    <div class="loader-wrapper" id="loader" style="display: none;">
+        <div class="loader">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toast-title">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toast-message"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Dropzone JS -->
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Initialize Dropzone
+        Dropzone.autoDiscover = false;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only initialize Dropzone if the form exists and user is authenticated
+            const fileUploadForm = document.getElementById('fileUploadForm');
+            if (fileUploadForm) {
+                const myDropzone = new Dropzone("#fileUploadForm", {
+                    url: "/upload",
+                    paramName: "file",
+                    maxFilesize: 16, // MB
+                    acceptedFiles: "image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar",
+                    addRemoveLinks: true,
+                    autoProcessQueue: false,
+                    dictDefaultMessage: "Drop files here to upload",
+                    dictFallbackMessage: "Your browser doesn't support drag'n'drop file uploads.",
+                    dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
+                    dictInvalidFileType: "You can't upload files of this type.",
+                    dictResponseError: "Server responded with {{statusCode}} code.",
+                    dictCancelUpload: "Cancel upload",
+                    dictUploadCanceled: "Upload canceled.",
+                    dictRemoveFile: "Remove file",
+                    previewTemplate: `
+                        <div class="dz-preview dz-file-preview">
+                            <div class="dz-image">
+                                <img data-dz-thumbnail />
+                            </div>
+                            <div class="dz-details">
+                                <div class="dz-filename"><span data-dz-name></span></div>
+                                <div class="dz-size"><span data-dz-size></span></div>
+                            </div>
+                            <div class="dz-progress"><span class="dz-upload" data-dz-uploadprogress></span></div>
+                            <div class="dz-error-message"><span data-dz-errormessage></span></div>
+                            <div class="dz-success-mark">
+                                <svg width="54" height="54" viewBox="0 0 54 54" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10.2071 29.7929L14.2929 25.7071C14.6834 25.3166 15.3166 25.3166 15.7071 25.7071L21.2929 31.2929C21.6834 31.6834 22.3166 31.6834 22.7071 31.2929L38.2929 15.7071C38.6834 15.3166 39.3166 15.3166 39.7071 15.7071L43.7929 19.7929C44.1834 20.1834 44.1834 20.8166 43.7929 21.2071L22.7071 42.2929C22.3166 42.6834 21.6834 42.6834 21.2929 42.2929L10.2071 31.2071C9.81658 30.8166 9.81658 30.1834 10.2071 29.7929Z"/>
+                                </svg>
+                            </div>
+                            <div class="dz-error-mark">
+                                <svg width="54" height="54" viewBox="0 0 54 54" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M26.2929 20.2929L19.2071 13.2071C18.8166 12.8166 18.1834 12.8166 17.7929 13.2071L13.2071 17.7929C12.8166 18.1834 12.8166 18.8166 13.2071 19.2071L20.2929 26.2929C20.6834 26.6834 20.6834 27.3166 20.2929 27.7071L13.2071 34.7929C12.8166 35.1834 12.8166 35.8166 13.2071 36.2071L17.7929 40.7929C18.1834 41.1834 18.8166 41.1834 19.2071 40.7929L26.2929 33.7071C26.6834 33.3166 27.3166 33.3166 27.7071 33.7071L34.7929 40.7929C35.1834 41.1834 35.8166 41.1834 36.2071 40.7929L40.7929 36.2071C41.1834 35.8166 41.1834 35.1834 40.7929 34.7929L33.7071 27.7071C33.3166 27.3166 33.3166 26.6834 33.7071 26.2929L40.7929 19.2071C41.1834 18.8166 41.1834 18.1834 40.7929 17.7929L36.2071 13.2071C35.8166 12.8166 35.1834 12.8166 34.7929 13.2071L27.7071 20.2929C27.3166 20.6834 26.6834 20.6834 26.2929 20.2929Z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    `,
+                    init: function() {
+                        this.on("addedfile", function(file) {
+                            // Preview for media files
+                            if (file.type.startsWith('video/')) {
+                                this.emit("thumbnail", file, "/static/img/video-placeholder.png");
+                            } else if (file.type.startsWith('audio/')) {
+                                this.emit("thumbnail", file, "/static/img/audio-placeholder.png");
+                            } else if (file.type === 'application/pdf') {
+                                this.emit("thumbnail", file, "/static/img/pdf-placeholder.png");
+                            }
+                        });
+                    }
+                });
+                
+                // Handle form submission
+                fileUploadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    document.getElementById('loader').style.display = 'flex';
+                    myDropzone.processQueue();
+                });
+                
+                // Close modal on successful upload
+                myDropzone.on("complete", function(file) {
+                    if (file.status === "success") {
+                        setTimeout(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                            modal.hide();
+                            location.reload();
+                        }, 1500);
+                    }
+                });
+
+                // -- START: Dashboard-specific Dropzone Logic --
+                // Attach event handlers and submit logic directly here
+                
+                // Handle upload button click
+                const uploadSubmitButton = document.getElementById('uploadSubmit');
+                if (uploadSubmitButton) {
+                    uploadSubmitButton.addEventListener('click', function() {
+                        if (myDropzone.getQueuedFiles().length > 0) {
+                            document.getElementById('uploadSpinner').classList.remove('d-none');
+                            this.disabled = true;
+                            myDropzone.processQueue();
+                        } else {
+                            // Ensure showToast is available (it should be defined below)
+                            if(window.showToast) {
+                                window.showToast("Warning", "Please add files to upload", "warning");
+                            } else {
+                                alert("Please add files to upload"); // Fallback alert
+                            }
+                        }
+                    });
+                }
+                
+                // Handle upload completion and errors
+                myDropzone.on("queuecomplete", function() {
+                    console.log("Queue finished processing.");
+                    const uploadSpinner = document.getElementById('uploadSpinner');
+                    const uploadSubmitBtn = document.getElementById('uploadSubmit');
+                    if(uploadSpinner) uploadSpinner.classList.add('d-none');
+                    if(uploadSubmitBtn) uploadSubmitBtn.disabled = false;
+                    
+                    let hasErrors = myDropzone.getRejectedFiles().length > 0;
+                    let hasSuccess = myDropzone.getFilesWithStatus(Dropzone.SUCCESS).length > 0;
+
+                    if (!hasErrors && hasSuccess) {
+                        if(window.showToast) window.showToast("Success", "Files uploaded successfully! Reloading...", "success");
+                        setTimeout(() => { location.reload(); }, 1500);
+                    } else if (hasErrors) {
+                         if(window.showToast) window.showToast("Error", "Some files failed to upload. Please check the messages below.", "error");
+                    } else {
+                        console.log("Queue complete, but no files were successfully uploaded or rejected.");
+                    }
+                     // Optionally clear Dropzone: myDropzone.removeAllFiles(true);
+                });
+
+                myDropzone.on("error", function(file, response) {
+                    let errorMessage = "An unknown error occurred.";
+                    if (typeof response === 'string') {
+                        errorMessage = response;
+                    } else if (response && response.error) {
+                        errorMessage = response.error;
+                    }
+                    
+                    const errorNode = Dropzone.createElement(`<div class="dz-error-message text-danger small mt-1"><span data-dz-errormessage>${errorMessage}</span></div>`);
+                    if (file.previewElement) {
+                        file.previewElement.appendChild(errorNode);
+                    }
+                    console.error('Upload error:', file.name, errorMessage);
+                });
+
+                myDropzone.on("success", function(file, response) {
+                    console.log('Upload success:', file.name, response);
+                });
+                // -- END: Dashboard-specific Dropzone Logic --
+            }
+            
+            // Show toast notifications
+            function showToast(title, message, type = 'info') {
+                const toastEl = document.getElementById('liveToast');
+                const toast = new bootstrap.Toast(toastEl);
+                
+                document.getElementById('toast-title').textContent = title;
+                document.getElementById('toast-message').textContent = message;
+                
+                // Remove previous color classes
+                toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'text-white');
+                
+                // Add appropriate color class
+                if (type === 'success') {
+                    toastEl.classList.add('bg-success', 'text-white');
+                } else if (type === 'error') {
+                    toastEl.classList.add('bg-danger', 'text-white');
+                } else if (type === 'warning') {
+                    toastEl.classList.add('bg-warning');
+                } else {
+                    toastEl.classList.add('bg-info', 'text-white');
+                }
+                
+                toast.show();
+            }
+            
+            // Delete file functionality
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            if (deleteButtons) {
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const fileId = this.getAttribute('data-file-id');
+                        const fileName = this.getAttribute('data-filename');
+                        
+                        // Set file info in confirmation modal
+                        document.getElementById('deleteFileName').textContent = fileName;
+                        document.getElementById('confirmDeleteBtn').setAttribute('data-file-id', fileId);
+                        
+                        // Show modal
+                        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                        deleteModal.show();
+                    });
+                });
+                
+                // Handle delete confirmation
+                document.getElementById('confirmDeleteBtn')?.addEventListener('click', function() {
+                    const fileId = this.getAttribute('data-file-id');
+                    document.getElementById('deleteLoader').classList.remove('d-none');
+                    this.disabled = true;
+                    
+                    fetch(`/delete_file/${fileId}`, {
+                        method: 'DELETE',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            showToast('Error', data.error || 'Failed to delete file', 'error');
+                            document.getElementById('deleteLoader').classList.add('d-none');
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Error', 'An error occurred', 'error');
+                        document.getElementById('deleteLoader').classList.add('d-none');
+                        this.disabled = false;
+                    });
+                });
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

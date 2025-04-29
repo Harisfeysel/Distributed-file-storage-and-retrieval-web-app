@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - File Storage App{% endblock %}
+
+{% block content %}
+<div class="profile-container container py-4">
+    <div class="page-header mb-4 border-bottom pb-3">
+        <h1 class="h3 fw-bold text-dark mb-1">
+            <i class="bi bi-person-badge me-2"></i>My Profile
+        </h1>
+        <p class="text-muted mb-0">View and manage your account details and storage.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-light border-0 p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-auto">
+                    <img src="{{ gravatar_url }}" alt="{{ current_user.username }}'s profile picture" class="rounded-circle" width="80" height="80">
+                </div>
+                <div class="col">
+                    <h4 class="mb-1">{{ current_user.username }}</h4>
+                    <p class="text-muted mb-0">{{ current_user.email }}</p>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle mt-2 rounded-pill px-2 py-1">Active User</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-4 p-lg-5">
+            <div class="row gy-5">
+                <!-- Account Information Section -->
+                <div class="col-lg-6">
+                    <h5 class="mb-4 fw-semibold text-primary"><i class="bi bi-info-circle me-2"></i>Account Information</h5>
+                    <dl class="row gy-3">
+                        <dt class="col-sm-4 text-muted">Username</dt>
+                        <dd class="col-sm-8">{{ user_data.username }}</dd>
+
+                        <dt class="col-sm-4 text-muted">Email Address</dt>
+                        <dd class="col-sm-8">{{ user_data.email }}</dd>
+
+                        <dt class="col-sm-4 text-muted">Account Created</dt>
+                        <dd class="col-sm-8">{{ user_data.created_at.strftime('%B %d, %Y') if user_data.created_at else 'N/A' }}</dd>
+                    </dl>
+                </div>
+
+                <!-- Storage Usage Section -->
+                <div class="col-lg-6">
+                    <h5 class="mb-4 fw-semibold text-primary"><i class="bi bi-hdd-stack me-2"></i>Storage Usage</h5>
+                    <div class="mb-2">
+                        <span class="fw-medium">{{ total_size_mb }} MB</span> used of {{ storage_limit_mb }} MB
+                    </div>
+                    <div class="progress" style="height: 10px;" role="progressbar" 
+                         aria-label="Storage usage" aria-valuenow="{{ storage_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                             style="width: {{ storage_percentage }}%"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">You are using {{ storage_percentage }}% of your storage allowance.</small>
+                    <a href="#" class="btn btn-sm btn-outline-primary mt-3 disabled" aria-disabled="true">
+                        <i class="bi bi-database-add me-1"></i> Upgrade Storage
+                    </a>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="col-12 mt-5">
+                    <h5 class="mb-4 fw-semibold text-primary"><i class="bi bi-gear me-2"></i>Settings</h5>
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0" 
+                           data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <span><i class="bi bi-key me-2 text-muted"></i>Change Password</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0 disabled" aria-disabled="true">
+                            <span><i class="bi bi-bell me-2 text-muted"></i>Notification Settings</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                         <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0 disabled" aria-disabled="true">
+                            <span><i class="bi bi-clock-history me-2 text-muted"></i>Activity Log</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel"><i class="bi bi-key-fill me-2"></i>Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm" action="{{ url_for('change_password') }}" method="post" novalidate>
+                    <!-- Error message placeholder -->
+                    <div id="passwordChangeError" class="alert alert-danger d-none p-2 small mb-3 border-start border-danger border-4" role="alert"></div>
+                    
+                    <!-- CSRF token field -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                        <div class="invalid-feedback text-danger fw-medium">Please enter your current password.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" name="newPassword" required minlength="8">
+                        <div class="invalid-feedback text-danger fw-medium">New password must be at least 8 characters long.</div>
+                        <!-- Simple strength indicator (optional) -->
+                        <div id="newPasswordHelp" class="form-text">Use at least 8 characters. Mix letters, numbers, and symbols for strength.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        <div class="invalid-feedback text-danger fw-medium">Please confirm your new password.</div>
+                        <div id="confirmPasswordError" class="text-danger fw-medium small mt-1 d-none">Passwords do not match.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="changePasswordForm" id="submitPasswordChange" class="btn btn-primary">
+                    <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Change Password Modal -->
+
+<style>
+    .card-header {
+        background-color: var(--bs-gray-100);
+    }
+    .list-group-item {
+        background-color: transparent; 
+        padding-left: 0;
+        padding-right: 0;
+        border-bottom: 1px solid var(--bs-gray-200);
+    }
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    .list-group-item-action.disabled {
+        color: var(--bs-gray-500);
+        cursor: not-allowed;
+        background-color: transparent;
+    }
+     .bg-success-subtle {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+    }
+    .text-success {
+        color: #198754 !important;
+    }
+    .border-success-subtle {
+        border-color: rgba(40, 167, 69, 0.2) !important;
+    }
+    dt {
+        font-weight: 400; 
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        const submitPasswordChange = document.getElementById('submitPasswordChange');
+        const currentPasswordInput = document.getElementById('currentPassword');
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const generalErrorDiv = document.getElementById('passwordChangeError');
+        const confirmErrorDiv = document.getElementById('confirmPasswordError');
+
+        submitPasswordChange.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Validate form fields
+            if (!currentPasswordInput.value) {
+                currentPasswordInput.classList.add('is-invalid');
+                return;
+            } else {
+                currentPasswordInput.classList.remove('is-invalid');
+            }
+            
+            if (!newPasswordInput.value || newPasswordInput.value.length < 8) {
+                newPasswordInput.classList.add('is-invalid');
+                return;
+            } else {
+                newPasswordInput.classList.remove('is-invalid');
+            }
+            
+            if (!confirmPasswordInput.value) {
+                confirmPasswordInput.classList.add('is-invalid');
+                return;
+            } else {
+                confirmPasswordInput.classList.remove('is-invalid');
+            }
+            
+            if (newPasswordInput.value !== confirmPasswordInput.value) {
+                confirmErrorDiv.classList.remove('d-none');
+                confirmPasswordInput.classList.add('is-invalid');
+                return;
+            } else {
+                confirmErrorDiv.classList.add('d-none');
+                confirmPasswordInput.classList.remove('is-invalid');
+            }
+            
+            // Create FormData from the form element
+            const formData = new FormData();
+            formData.append('currentPassword', currentPasswordInput.value);
+            formData.append('newPassword', newPasswordInput.value);
+            formData.append('confirmPassword', confirmPasswordInput.value);
+            // Add CSRF token
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+            
+            // Show loading spinner
+            const spinner = submitPasswordChange.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            submitPasswordChange.disabled = true;
+            
+            // Clear any previous error states
+            generalErrorDiv.classList.add('d-none');
+            currentPasswordInput.classList.remove('is-invalid');
+            newPasswordInput.classList.remove('is-invalid');
+            confirmPasswordInput.classList.remove('is-invalid');
+            confirmErrorDiv.classList.add('d-none');
+
+            // Send request
+            fetch("{{ url_for('change_password') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                // Check if response is ok (status in the range 200-299)
+                if (!response.ok) {
+                    // If we get a non-200 response, log it
+                    console.error(`HTTP error: ${response.status}`);
+                }
+                return response.json(); // Still try to parse JSON
+            })
+            .then(data => {
+                console.log('Response data:', data); // Log the response for debugging
+                
+                if (data.success) {
+                    // Show success message before redirecting
+                    generalErrorDiv.textContent = data.message || 'Password updated successfully!';
+                    generalErrorDiv.classList.remove('d-none', 'alert-danger');
+                    generalErrorDiv.classList.add('alert-success');
+                    
+                    // Hide spinner
+                    spinner.classList.add('d-none');
+                    submitPasswordChange.disabled = true;
+                    
+                    // Disable the form inputs
+                    currentPasswordInput.disabled = true;
+                    newPasswordInput.disabled = true;
+                    confirmPasswordInput.disabled = true;
+                    
+                    // Redirect after a short delay to show the success message
+                    setTimeout(() => {
+                        window.location.href = '/profile';
+                    }, 1500);
+                } else {
+                    // Handle specific errors
+                    if (data.error && data.error.includes('Incorrect current password')) {
+                        currentPasswordInput.classList.add('is-invalid');
+                        // Target the specific feedback div for current password
+                        const currentPasswordFeedback = currentPasswordInput.parentElement.querySelector('.invalid-feedback');
+                        if (currentPasswordFeedback) {
+                            currentPasswordFeedback.textContent = data.error;
+                            generalErrorDiv.classList.add('d-none'); // Hide the general error div
+                        } else {
+                            // Fallback to general error div if specific feedback div isn't found
+                            generalErrorDiv.textContent = data.error;
+                            generalErrorDiv.classList.remove('d-none');
+                            generalErrorDiv.classList.add('alert-danger');
+                        }
+                        currentPasswordInput.value = ''; // Clear the incorrect password input
+                        currentPasswordInput.focus();
+                    } else if (data.error && data.error.includes('New passwords do not match')) {
+                        confirmPasswordInput.classList.add('is-invalid');
+                        confirmErrorDiv.textContent = data.error; // Use specific mismatch div
+                        confirmErrorDiv.classList.remove('d-none');
+                        generalErrorDiv.classList.add('d-none'); // Hide general error
+                        confirmPasswordInput.focus();
+                    } else if (data.error && data.error.includes('least 8 characters')) {
+                        newPasswordInput.classList.add('is-invalid');
+                        // Target the specific feedback div for new password
+                        const newPasswordFeedback = newPasswordInput.parentElement.querySelector('.invalid-feedback');
+                        if (newPasswordFeedback) {
+                            newPasswordFeedback.textContent = data.error;
+                            generalErrorDiv.classList.add('d-none'); // Hide general error
+                        } else {
+                            generalErrorDiv.textContent = data.error;
+                            generalErrorDiv.classList.remove('d-none');
+                            generalErrorDiv.classList.add('alert-danger');
+                        }
+                        newPasswordInput.focus();
+                    } else {
+                        // Generic error display
+                        generalErrorDiv.textContent = data.error || 'An unknown error occurred.';
+                        generalErrorDiv.classList.remove('d-none', 'alert-success');
+                        generalErrorDiv.classList.add('alert-danger'); // Ensure alert is red
+                    }
+                    
+                    // Hide loading spinner
+                    spinner.classList.add('d-none');
+                    submitPasswordChange.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                generalErrorDiv.textContent = 'A network error occurred. Please try again.';
+                generalErrorDiv.classList.remove('d-none');
+                generalErrorDiv.classList.add('alert-danger');
+                
+                // Hide loading spinner
+                spinner.classList.add('d-none');
+                submitPasswordChange.disabled = false;
+            });
+        });
+    });
+</script>
+{% endblock %} 

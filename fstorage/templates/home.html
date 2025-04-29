@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Secure File Storage{% endblock %}
+
+{% block auth_content %}
+<div class="landing-page">
+    <!-- Hero Section with Animation -->
+    <header class="hero-section">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6 col-md-10 mx-auto mx-lg-0 fade-in-left">
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3">Trusted by thousands</span>
+                    <h1 class="display-4 fw-bold mb-4 text-gradient">Your Files, <br>Secure & Accessible</h1>
+                    <p class="lead mb-4 text-secondary">Store, manage, and share your important files with our easy-to-use cloud storage platform. Access your data from anywhere, anytime.</p>
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg shadow-hover">
+                            Get Started Free
+                            <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                            Sign In
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center small text-muted">
+                        <i class="bi bi-shield-check me-2 text-success"></i>
+                        <span>Military-grade encryption & secure storage</span>
+                    </div>
+                </div>
+                <div class="col-lg-6 d-none d-lg-block fade-in-right">
+                    <div class="position-relative">
+                        <div class="floating-shape bg-primary opacity-10 rounded-circle"></div>
+                        <div class="floating-shape-2 bg-secondary opacity-10 rounded-circle"></div>
+                        <img src="https://cdn.pixabay.com/photo/2018/03/15/16/11/background-3228704_1280.jpg" alt="Secure File Storage" class="img-fluid rounded-4 shadow-lg">
+                        <div class="stats-card bg-white shadow rounded-3 p-3 position-absolute bottom-0 start-0 mb-4 ms-4 d-flex align-items-center">
+                            <div class="stats-icon bg-primary-subtle rounded-circle p-2 me-3">
+                                <i class="bi bi-graph-up text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">99.9%</h6>
+                                <small class="text-muted">Uptime</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Trusted By Section -->
+    <section class="py-5 bg-light">
+        <div class="container py-4">
+            <div class="text-center mb-4">
+                <p class="text-muted">Trusted by individuals and businesses worldwide</p>
+            </div>
+            <div class="row justify-content-center align-items-center g-4">
+                <div class="col-4 col-md-2 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2015/05/26/09/37/paypal-784404_640.png" alt="Partner" class="img-fluid" style="max-height: 35px; opacity: 0.7;">
+                </div>
+                <div class="col-4 col-md-2 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_640.png" alt="Partner" class="img-fluid" style="max-height: 35px; opacity: 0.7;">
+                </div>
+                <div class="col-4 col-md-2 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2013/02/12/09/07/microsoft-80658_640.png" alt="Partner" class="img-fluid" style="max-height: 35px; opacity: 0.7;">
+                </div>
+                <div class="col-4 col-md-2 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2015/04/13/17/45/icon-720944_640.png" alt="Partner" class="img-fluid" style="max-height: 35px; opacity: 0.7;">
+                </div>
+                <div class="col-4 col-md-2 text-center">
+                    <img src="https://cdn.pixabay.com/photo/2015/05/26/09/37/paypal-784404_640.png" alt="Partner" class="img-fluid" style="max-height: 35px; opacity: 0.7;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section py-5">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3">Features</span>
+                <h2 class="fw-bold mb-3">Why Choose Our Platform?</h2>
+                <p class="lead text-muted mx-auto" style="max-width: 600px;">Our cloud storage solution offers unmatched security, convenience, and accessibility for all your digital assets.</p>
+            </div>
+            <div class="row g-4 features-container">
+                <div class="col-md-4 feature-card">
+                    <div class="card h-100 border-0 shadow-sm hover-lift">
+                        <div class="card-body p-4">
+                            <div class="feature-icon bg-primary bg-opacity-10 p-3 rounded-circle mb-4" style="width: 70px; height: 70px;">
+                                <i class="bi bi-shield-lock fs-1 text-primary"></i>
+                            </div>
+                            <h4 class="mb-3">Secure Storage</h4>
+                            <p class="text-muted mb-0">Your files are encrypted with AES-256 and stored securely, protected from unauthorized access.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 feature-card">
+                    <div class="card h-100 border-0 shadow-sm hover-lift">
+                        <div class="card-body p-4">
+                            <div class="feature-icon bg-primary bg-opacity-10 p-3 rounded-circle mb-4" style="width: 70px; height: 70px;">
+                                <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                            </div>
+                            <h4 class="mb-3">Easy Upload</h4>
+                            <p class="text-muted mb-0">Simply drag and drop files to upload them to your account in seconds, no technical skills required.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 feature-card">
+                    <div class="card h-100 border-0 shadow-sm hover-lift">
+                        <div class="card-body p-4">
+                            <div class="feature-icon bg-primary bg-opacity-10 p-3 rounded-circle mb-4" style="width: 70px; height: 70px;">
+                                <i class="bi bi-devices fs-1 text-primary"></i>
+                            </div>
+                            <h4 class="mb-3">Access Anywhere</h4>
+                            <p class="text-muted mb-0">Access your files from any device and location, whether you're at home, work, or on the go.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonial Section -->
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-3">Testimonials</span>
+                    <h2 class="fw-bold mb-4">What Our Users Say</h2>
+                    <p class="lead">Join thousands of satisfied users who trust our platform for their file storage needs.</p>
+                    <div class="d-flex align-items-center mt-4">
+                        <div class="d-flex">
+                            <span class="me-2"><i class="bi bi-star-fill text-warning"></i></span>
+                            <span class="me-2"><i class="bi bi-star-fill text-warning"></i></span>
+                            <span class="me-2"><i class="bi bi-star-fill text-warning"></i></span>
+                            <span class="me-2"><i class="bi bi-star-fill text-warning"></i></span>
+                            <span class="me-2"><i class="bi bi-star-fill text-warning"></i></span>
+                        </div>
+                        <div class="ms-2">
+                            <p class="mb-0 small">4.9 out of 5 stars from 500+ reviews</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm p-4">
+                        <div class="d-flex mb-4">
+                            <img src="https://cdn.pixabay.com/photo/2017/01/31/21/23/avatar-2027366_1280.png" alt="User" class="rounded-circle" width="50" height="50">
+                            <div class="ms-3">
+                                <h5 class="mb-0">Michael Johnson</h5>
+                                <p class="text-muted small mb-0">Marketing Director</p>
+                            </div>
+                        </div>
+                        <p class="lead fst-italic mb-0">"This platform has completely transformed how our team manages files. The security features and ease of use make it the perfect solution for our business needs."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section py-5">
+        <div class="container py-5 text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="fw-bold mb-4 text-white">Ready to secure your files?</h2>
+                    <p class="lead mb-4 text-white-50">Start storing your files securely today with our easy-to-use platform.</p>
+                    <div class="position-relative d-inline-block">
+                        <img src="https://cdn.pixabay.com/photo/2017/01/29/13/21/mobile-devices-2017980_1280.png" alt="Devices" class="img-fluid mb-4" style="max-height: 200px;">
+                    </div>
+                    <div class="d-block">
+                        <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-5 shadow">
+                            <span>Create Free Account</span>
+                            <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                        <p class="text-white-50 small mt-3">No credit card required • Free plan available</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-cloud-fill fs-4 me-2 text-primary"></i>
+                        <h5 class="mb-0">File Storage App</h5>
+                    </div>
+                    <p class="text-muted">A secure solution for all your file storage needs, providing military-grade encryption and easy access.</p>
+                    <div class="d-flex mt-4">
+                        <a href="#" class="me-2 text-decoration-none text-white-50 hover-text-primary">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="#" class="me-2 text-decoration-none text-white-50 hover-text-primary">
+                            <i class="bi bi-twitter"></i>
+                        </a>
+                        <a href="#" class="me-2 text-decoration-none text-white-50 hover-text-primary">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                        <a href="#" class="text-decoration-none text-white-50 hover-text-primary">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <h6 class="mb-3">Company</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">About</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Careers</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Blog</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    <h6 class="mb-3">Support</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Help Center</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">FAQ</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Community</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-text-primary">Status</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-3">Stay Updated</h6>
+                    <p class="text-muted">Subscribe to our newsletter for the latest updates and news.</p>
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" placeholder="Your email address">
+                        <button class="btn btn-primary" type="button">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 border-secondary">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="small text-muted mb-md-0">© 2023 File Storage App. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item"><a href="#" class="text-decoration-none text-white-50 small">Terms</a></li>
+                        <li class="list-inline-item ms-3"><a href="#" class="text-decoration-none text-white-50 small">Privacy</a></li>
+                        <li class="list-inline-item ms-3"><a href="#" class="text-decoration-none text-white-50 small">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<style>
+    /* Core styles */
+    .landing-page {
+        color: #2c3e50;
+    }
+    .hero-section {
+        background-color: white;
+        position: relative;
+        overflow: hidden;
+        padding: 3rem 0;
+    }
+    .features-section {
+        background-color: white;
+    }
+    .feature-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .cta-section {
+        background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+        position: relative;
+    }
+    
+    /* Modern design elements */
+    .text-gradient {
+        background: linear-gradient(90deg, #4361ee, #3a0ca3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+    .shadow-hover {
+        transition: all 0.3s ease;
+    }
+    .shadow-hover:hover {
+        box-shadow: 0 10px 20px rgba(67, 97, 238, 0.2);
+        transform: translateY(-2px);
+    }
+    .bg-primary-subtle {
+        background-color: rgba(67, 97, 238, 0.1);
+    }
+    .floating-shape {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        top: -100px;
+        right: -100px;
+        z-index: -1;
+        animation: float 8s ease-in-out infinite;
+    }
+    .floating-shape-2 {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        bottom: -50px;
+        left: -50px;
+        z-index: -1;
+        animation: float 6s ease-in-out infinite reverse;
+    }
+    
+    /* Animations */
+    @keyframes float {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(10px, 10px) rotate(5deg); }
+        100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .fade-in-left {
+        animation: fadeInLeft 1s ease forwards;
+    }
+    .fade-in-right {
+        animation: fadeInRight 1s ease forwards;
+    }
+    @keyframes fadeInLeft {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .feature-card {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    .feature-card:nth-child(1) { animation-delay: 0.1s; }
+    .feature-card:nth-child(2) { animation-delay: 0.3s; }
+    .feature-card:nth-child(3) { animation-delay: 0.5s; }
+    @keyframes fadeInUp {
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Hover effects */
+    .hover-text-primary:hover {
+        color: var(--primary-color) !important;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .hero-section {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+        .floating-shape, .floating-shape-2 {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}

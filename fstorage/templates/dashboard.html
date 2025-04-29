@@ -1,0 +1,972 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - File Storage App{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 fw-bold text-dark mb-1">My Files</h1>
+                <p class="text-muted mb-0">Manage and organize your stored files</p>
+                
+                <!-- Breadcrumb navigation -->
+                <nav aria-label="breadcrumb" class="mt-2">
+                    <ol class="breadcrumb mb-0">
+                        {% for crumb in breadcrumbs %}
+                            {% if crumb.is_current %}
+                                <li class="breadcrumb-item active" aria-current="page">
+                                    <i class="bi bi-folder2-open me-1"></i>{{ crumb.name }}
+                                </li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{{ url_for('dashboard', folder_id=crumb.id) }}">
+                                        {% if crumb.id == 'root' %}
+                                            <i class="bi bi-house-door me-1"></i>
+                                        {% else %}
+                                            <i class="bi bi-folder me-1"></i>
+                                        {% endif %}
+                                        {{ crumb.name }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="input-group search-box">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 py-2 search-input" placeholder="Search files..." id="fileSearch">
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-primary d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-plus-lg"></i>
+                        <span class="d-none d-md-inline">Create</span>
+                </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="bi bi-cloud-upload me-2"></i>Upload Files
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-file-earmark fs-4 text-primary"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1 small">Total Files</p>
+                            <h3 class="mb-0 fw-bold">{{ total_files_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-hdd fs-4 text-success"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1 small">Storage Used</p>
+                            <h3 class="mb-0 fw-bold">
+                                {{ (total_size / (1024*1024))|round(2) }} MB
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-info-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-clock-history fs-4 text-info"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-1 small">Last Upload</p>
+                            <h3 class="mb-0 fw-bold">
+                                {% if latest_upload_date %}
+                                    {{ latest_upload_date.strftime('%b %d') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Controls and Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div class="file-view-options d-flex gap-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" id="gridViewBtn">
+                            <i class="bi bi-grid"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="listViewBtn">
+                            <i class="bi bi-list"></i>
+                        </button>
+                    </div>
+                    <select class="form-select" id="fileSort">
+                        <option value="name">Name</option>
+                        <option value="date" selected>Date</option>
+                        <option value="size">Size</option>
+                        <option value="type">Type</option>
+                    </select>
+                </div>
+                <div class="file-filters d-flex gap-2">
+                    <select class="form-select" id="fileTypeFilter">
+                        <option value="all" selected>All Types</option>
+                        <option value="folder">Folders</option>
+                        <option value="image">Images</option>
+                        <option value="document">Documents</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="file-browser mb-4">
+        <div class="row g-3" id="filesContainer">
+            <!-- Folders First -->
+            {% if folders %}
+                {% for folder in folders %}
+                <div class="col-md-6 col-lg-4 col-xl-3 file-item folder-item" 
+                     data-name="{{ folder.name }}" 
+                     data-date="{{ folder.created_at.isoformat() if folder.created_at else '' }}" 
+                     data-size="0" 
+                     data-type="folder">
+                    <div class="card file-card h-100 border-0 shadow-sm">
+                        <div class="card-file-preview">
+                            <div class="card-img-top file-preview d-flex align-items-center justify-content-center" 
+                                 style="height: 160px; background-color: #f8f9fa;">
+                                <div class="file-icon text-center">
+                                    <i class="bi bi-folder2 display-3" style="color: #ffc107;"></i>
+                                </div>
+                                <a href="{{ url_for('dashboard', folder_id=folder._id) }}" class="stretched-link"></a>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="card-title text-truncate mb-1" title="{{ folder.name }}">{{ folder.name }}</h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-link text-muted p-0 folder-menu-btn" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('dashboard', folder_id=folder._id) }}">
+                                                <i class="bi bi-folder2-open me-2"></i>Open
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item rename-folder-btn" 
+                                                    data-folder-id="{{ folder._id }}" 
+                                                    data-folder-name="{{ folder.name }}">
+                                                <i class="bi bi-pencil me-2"></i>Rename
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item text-danger delete-folder-btn" 
+                                                    data-folder-id="{{ folder._id }}" 
+                                                    data-folder-name="{{ folder.name }}">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="card-text small text-muted mb-0">
+                                <span class="d-block mb-1">
+                                    <i class="bi bi-calendar-date me-1"></i> 
+                                    {{ folder.created_at.strftime('%b %d, %Y') if folder.created_at else 'N/A' }}
+                                </span>
+                                <span class="d-block">
+                                    <i class="bi bi-folder me-1"></i> Folder
+                                </span>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white p-2 border-0">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('dashboard', folder_id=folder._id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-folder2-open"></i> Open
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger delete-folder-btn" 
+                                        data-folder-id="{{ folder._id }}" 
+                                        data-folder-name="{{ folder.name }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Files Second -->
+            {% if files %}
+                {% for file in files %}
+                <div class="col-md-6 col-lg-4 col-xl-3 file-item" 
+                     data-name="{{ file.filename }}" 
+                     data-date="{{ file.uploaded_at.isoformat() }}" 
+                     data-size="{{ file.size }}" 
+                     data-type="{{ file.content_type.split('/')[0] }}">
+                    <div class="card file-card h-100 border-0 shadow-sm">
+                        <div class="card-file-preview">
+                            {% if file.content_type.startswith('image/') %}
+                            <div class="card-img-top file-preview bg-light d-flex align-items-center justify-content-center" style="height: 160px;">
+                                <img src="{{ url_for('download_file', file_id=file._id, preview='true') }}" 
+                                     class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;"
+                                     alt="{{ file.filename }}" loading="lazy">
+                            </div>
+                            {% elif file.content_type.startswith('video/') %}
+                            <div class="card-img-top file-preview bg-dark d-flex align-items-center justify-content-center position-relative" style="height: 160px;">
+                                <!-- Video thumbnail showing play button overlay -->
+                                <div class="video-thumbnail w-100 h-100 d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-play-circle-fill text-white display-4"></i>
+                                </div>
+                                <!-- Open video in modal or new tab on click -->
+                                <a href="{{ url_for('download_file', file_id=file._id, preview='true') }}" 
+                                   class="stretched-link video-link" 
+                                   data-video-id="{{ file._id }}"
+                                   data-video-type="{{ file.content_type }}"
+                                   data-filename="{{ file.filename }}"
+                                   data-bs-toggle="modal" 
+                                   data-bs-target="#videoPreviewModal">
+                                </a>
+                            </div>
+                            {% elif file.content_type == 'application/pdf' %}
+                            <div class="card-img-top file-preview d-flex align-items-center justify-content-center position-relative" style="height: 160px; background-color: #f8f9fa;">
+                                <div class="file-icon text-center">
+                                    <i class="bi bi-file-pdf display-3" style="color: #e74c3c;"></i>
+                                </div>
+                                <a href="{{ url_for('download_file', file_id=file._id) }}" class="stretched-link" target="_blank" title="View PDF"></a>
+                            </div>
+                            {% else %}
+                            <div class="card-img-top file-preview d-flex align-items-center justify-content-center" style="height: 160px; background-color: #f8f9fa;">
+                                <div class="file-icon text-center">
+                                    {% if file.content_type == 'application/pdf' %}
+                                    <i class="bi bi-file-pdf display-3" style="color: #e74c3c;"></i>
+                                    {% elif 'msword' in file.content_type or 'document' in file.content_type %}
+                                    <i class="bi bi-file-word display-3" style="color: #2c81ba;"></i>
+                                    {% elif 'excel' in file.content_type or 'spreadsheet' in file.content_type %}
+                                    <i class="bi bi-file-excel display-3" style="color: #27ae60;"></i>
+                                    {% elif 'powerpoint' in file.content_type or 'presentation' in file.content_type %}
+                                    <i class="bi bi-file-ppt display-3" style="color: #e67e22;"></i>
+                                    {% elif file.content_type.startswith('text/') %}
+                                    <i class="bi bi-file-text display-3" style="color: #3498db;"></i>
+                                    {% elif 'zip' in file.content_type or 'archive' in file.content_type %}
+                                    <i class="bi bi-file-zip display-3" style="color: #7f8c8d;"></i>
+                                    {% elif file.content_type.startswith('audio/') %}
+                                    <i class="bi bi-file-music display-3" style="color: #9b59b6;"></i>
+                                    {% elif file.content_type.startswith('video/') %}
+                                    <i class="bi bi-file-play display-3" style="color: #e74c3c;"></i>
+                                    {% else %}
+                                    <i class="bi bi-file-earmark display-3" style="color: #95a5a6;"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="card-title text-truncate mb-1" title="{{ file.filename }}">{{ file.filename }}</h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{{ url_for('download_file', file_id=file._id) }}"><i class="bi bi-download me-2"></i>Download</a></li>
+                                        <li><button class="dropdown-item move-file-btn" data-file-id="{{ file._id }}" data-filename="{{ file.filename }}"><i class="bi bi-folder-symlink me-2"></i>Move to Folder</button></li>
+                                        <li><button class="dropdown-item text-danger delete-btn" data-file-id="{{ file._id }}" data-filename="{{ file.filename }}"><i class="bi bi-trash me-2"></i>Delete</button></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p class="card-text small text-muted mb-0">
+                                <span class="d-block mb-1">
+                                    <i class="bi bi-calendar-date me-1"></i> {{ file.uploaded_at.strftime('%b %d, %Y') }}
+                                </span>
+                                <span class="d-block">
+                                    <i class="bi bi-hdd me-1"></i> {{ (file.size/1024)|round(1) }} KB
+                                </span>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white p-2 border-0">
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-sm btn-primary download-btn" data-file-id="{{ file._id }}">
+                                    <i class="bi bi-download"></i> Download
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-btn" data-file-id="{{ file._id }}" data-filename="{{ file.filename }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if not folders and not files %}
+                <!-- Empty State -->
+                <div class="col-12">
+                    <div class="empty-state text-center py-5">
+                        <div class="empty-state-icon bg-light rounded-circle p-4 mx-auto mb-4" style="width: 120px; height: 120px;">
+                            <i class="bi bi-cloud-upload display-1 text-primary"></i>
+                        </div>
+                        <h3 class="fw-bold mb-3">No files yet</h3>
+                        <p class="text-muted mb-4">
+                            You haven't uploaded any files to your storage yet. Get started by uploading your first file.
+                        </p>
+                        <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="bi bi-cloud-upload me-2"></i> Upload Files
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-cloud-upload me-2"></i>Upload Files
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="dropzone-container mb-3">
+                    <form action="{{ url_for('upload_file') }}" class="dropzone" id="fileUploadForm">
+                        <div class="dz-message">
+                            <div class="mb-3">
+                                <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
+                            </div>
+                            <h5>Drag files here or click to upload</h5>
+                            <p class="text-muted">Upload up to 10 files (max 16MB each)</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="uploadSubmit">
+                        <span class="spinner-border spinner-border-sm d-none me-2" id="uploadSpinner"></span>
+                        Upload Files
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Delete File
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-1">Are you sure you want to delete:</p>
+                <p class="fw-bold mb-3" id="deleteFilename"></p>
+                <p class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <span class="spinner-border spinner-border-sm d-none me-2" id="deleteSpinner"></span>
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Preview Modal -->
+<div class="modal fade" id="videoPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-dark text-white">
+                <h5 class="modal-title video-title">
+                    <i class="bi bi-play-circle me-2"></i>Video Preview
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 bg-dark">
+                <div class="ratio ratio-16x9">
+                    <video id="videoPlayer" controls class="video-player">
+                        <source src="" type="" id="videoSource">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <a href="#" class="btn btn-primary download-video" id="downloadVideoBtn">
+                    <i class="bi bi-download me-2"></i>Download Video
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Move File Modal -->
+<div class="modal fade" id="moveFileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-folder-symlink me-2"></i>Move File
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-1">This feature has been disabled.</p>
+                <p>All files are now stored at the root level for simplicity.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dashboard styling */
+    .dashboard-container {
+        padding: 1.5rem 0;
+    }
+    
+    /* Stats icons */
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .bg-primary-subtle {
+        background-color: rgba(67, 97, 238, 0.1);
+    }
+    
+    .bg-success-subtle {
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    
+    .bg-info-subtle {
+        background-color: rgba(23, 162, 184, 0.1);
+    }
+    
+    /* File cards */
+    .file-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .file-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .card-file-preview {
+        overflow: hidden;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Folder items */
+    .folder-item .file-card:hover {
+        border-color: #ffc107 !important;
+    }
+    
+    /* List view */
+    .list-view .file-item {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+    
+    .list-view .file-card {
+        flex-direction: row;
+    }
+    
+    .list-view .card-file-preview {
+        width: 80px;
+        height: 80px;
+        border-bottom: none;
+        border-right: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .list-view .file-preview {
+        height: 100% !important;
+    }
+    
+    .list-view .card-body {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex: 1;
+    }
+    
+    .list-view .card-footer {
+        width: 180px;
+        border-left: 1px solid rgba(0, 0, 0, 0.05) !important;
+        display: flex;
+        align-items: center;
+        padding: 1rem !important;
+    }
+    
+    /* Search box */
+    .search-box {
+        min-width: 250px;
+    }
+    
+    .search-input:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+    }
+    
+    /* Breadcrumb styling */
+    .breadcrumb {
+        font-size: 0.9rem;
+    }
+    
+    .breadcrumb-item.active {
+        font-weight: 500;
+    }
+    
+    /* Empty state */
+    .empty-state-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Dropdown animations */
+    .dropdown-menu {
+        animation: dropdown-animation 0.2s ease forwards;
+        transform-origin: top;
+    }
+    
+    @keyframes dropdown-animation {
+        from {
+            opacity: 0;
+            transform: scaleY(0.7);
+        }
+        to {
+            opacity: 1;
+            transform: scaleY(1);
+        }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .file-view-options,
+        .file-filters {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Dropzone if the element exists on the page
+        if (typeof Dropzone !== 'undefined' && document.getElementById('fileUploadForm')) {
+            Dropzone.autoDiscover = false;
+            
+            const myDropzone = new Dropzone('#fileUploadForm', {
+                paramName: 'file',
+                maxFilesize: 16, // MB
+                maxFiles: 10,
+                addRemoveLinks: true,
+                autoProcessQueue: false,
+                dictDefaultMessage: 'Drop files here to upload',
+                dictRemoveFile: 'Remove',
+                dictFileTooBig: 'File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.',
+                dictMaxFilesExceeded: 'You can only upload up to {{maxFiles}} files at once.'
+            });
+            
+            // Handle the upload button click
+            document.getElementById('uploadSubmit').addEventListener('click', function() {
+                if (myDropzone.getQueuedFiles().length === 0) {
+                    showToast("Error", "Please add files to upload", "danger");
+                    return;
+                }
+                
+                // Show spinner and disable button
+                document.getElementById('uploadSpinner').classList.remove('d-none');
+                this.disabled = true;
+                
+                // Process all queued files
+                myDropzone.processQueue();
+            });
+            
+            // Handle upload success
+            myDropzone.on('success', function(file, response) {
+                showToast("Success", "File uploaded successfully", "success");
+            });
+            
+            // Handle all files processed
+            myDropzone.on('queuecomplete', function() {
+                // Reset spinner and button
+                document.getElementById('uploadSpinner').classList.add('d-none');
+                document.getElementById('uploadSubmit').disabled = false;
+                
+                // Close modal after a short delay
+                setTimeout(function() {
+                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                    // Reload page to show new files
+                    location.reload();
+                }, 1000);
+            });
+            
+            // Handle upload error
+            myDropzone.on('error', function(file, errorMessage, xhr) {
+                let errorMsg = 'Upload failed';
+                
+                if (typeof errorMessage === 'object' && errorMessage.error) {
+                    errorMsg = errorMessage.error;
+                } else if (typeof errorMessage === 'string') {
+                    errorMsg = errorMessage;
+                }
+                
+                showToast("Error", errorMsg, "danger");
+                
+                // Reset spinner and button
+                document.getElementById('uploadSpinner').classList.add('d-none');
+                document.getElementById('uploadSubmit').disabled = false;
+            });
+            
+            // Reset dropzone when modal is closed
+            document.getElementById('uploadModal').addEventListener('hidden.bs.modal', function() {
+                myDropzone.removeAllFiles(true);
+                document.getElementById('uploadSpinner').classList.add('d-none');
+                document.getElementById('uploadSubmit').disabled = false;
+            });
+        }
+
+        // View Toggle
+        const listViewBtn = document.getElementById('listViewBtn');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+        const filesContainer = document.getElementById('filesContainer');
+
+        if (listViewBtn && gridViewBtn && filesContainer) {
+            listViewBtn.addEventListener('click', function() {
+                filesContainer.classList.add('list-view');
+                this.classList.add('active');
+                gridViewBtn.classList.remove('active');
+                localStorage.setItem('fileView', 'list');
+            });
+            
+            gridViewBtn.addEventListener('click', function() {
+                filesContainer.classList.remove('list-view');
+                this.classList.add('active');
+                listViewBtn.classList.remove('active');
+                localStorage.setItem('fileView', 'grid');
+            });
+
+             // Restore view preference
+            const savedView = localStorage.getItem('fileView');
+            if (savedView === 'list') {
+                listViewBtn.click();
+            }
+        }
+        
+        // File search functionality
+        document.getElementById('fileSearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const fileItems = document.querySelectorAll('.file-item');
+            
+            fileItems.forEach(item => {
+                const fileName = item.getAttribute('data-name').toLowerCase();
+                if (fileName.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            checkEmptyResults();
+        });
+        
+        // File type filter
+        document.getElementById('fileTypeFilter').addEventListener('change', function() {
+            const filterValue = this.value;
+            const fileItems = document.querySelectorAll('.file-item');
+            
+            fileItems.forEach(item => {
+                if (filterValue === 'all') {
+                    item.style.display = '';
+                } else {
+                    const fileType = item.getAttribute('data-type');
+                    if (fileType === filterValue || 
+                        (filterValue === 'document' && ['application', 'text'].includes(fileType))) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+            
+            checkEmptyResults();
+        });
+        
+        // File sorting
+        document.getElementById('fileSort').addEventListener('change', function() {
+            const sortBy = this.value;
+            const fileContainer = document.getElementById('filesContainer');
+            const fileItems = Array.from(document.querySelectorAll('.file-item'));
+            
+            fileItems.sort((a, b) => {
+                if (sortBy === 'name') {
+                    // Sort folders first, then files
+                    const aIsFolder = a.classList.contains('folder-item');
+                    const bIsFolder = b.classList.contains('folder-item');
+                    
+                    if (aIsFolder && !bIsFolder) return -1;
+                    if (!aIsFolder && bIsFolder) return 1;
+                    
+                    return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+                } else if (sortBy === 'date') {
+                    return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
+                } else if (sortBy === 'size') {
+                    return parseInt(b.getAttribute('data-size')) - parseInt(a.getAttribute('data-size'));
+                } else if (sortBy === 'type') {
+                    // Group by type but keep folders first
+                    const aIsFolder = a.classList.contains('folder-item');
+                    const bIsFolder = b.classList.contains('folder-item');
+                    
+                    if (aIsFolder && !bIsFolder) return -1;
+                    if (!aIsFolder && bIsFolder) return 1;
+                    
+                    return a.getAttribute('data-type').localeCompare(b.getAttribute('data-type'));
+                }
+            });
+            
+            // Remove and reappend sorted items
+            fileItems.forEach(item => {
+                fileContainer.appendChild(item);
+            });
+        });
+        
+        // Check if no results are found
+        function checkEmptyResults() {
+            const visibleItems = document.querySelectorAll('.file-item[style=""]').length;
+            const emptyState = document.querySelector('.empty-results');
+            
+            if (visibleItems === 0 && document.querySelectorAll('.file-item').length > 0) {
+                if (!emptyState) {
+                    const container = document.getElementById('filesContainer');
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'col-12 empty-results';
+                    emptyDiv.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="bi bi-search display-4 text-muted"></i>
+                            <h5 class="mt-3">No items match your search</h5>
+                            <p class="text-muted">Try adjusting your search or filter to find what you're looking for.</p>
+                            <button class="btn btn-outline-secondary" id="resetFilters">Reset Filters</button>
+                        </div>
+                    `;
+                    container.appendChild(emptyDiv);
+                    
+                    document.getElementById('resetFilters').addEventListener('click', function() {
+                        document.getElementById('fileSearch').value = '';
+                        document.getElementById('fileTypeFilter').value = 'all';
+                        document.querySelectorAll('.file-item').forEach(item => {
+                            item.style.display = '';
+                        });
+                        document.querySelector('.empty-results').remove();
+                    });
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+        }
+        
+        // Move File functionality - modified to disable it
+        document.querySelectorAll('.move-file-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileName = this.dataset.filename;
+                showToast("Info", "Folder management has been disabled. All files are stored at the root level.", "info");
+            });
+        });
+        
+        // Delete File Functionality
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileId = this.dataset.fileId;
+                const filename = this.dataset.filename;
+                
+                document.getElementById('deleteFilename').textContent = filename;
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                
+                // Set up the confirm button
+                document.getElementById('confirmDelete').onclick = function() {
+                    deleteFile(fileId, filename);
+                    document.getElementById('deleteSpinner').classList.remove('d-none');
+                    this.disabled = true;
+                };
+                
+                deleteModal.show();
+            });
+        });
+        
+        function deleteFile(fileId, filename) {
+            fetch(`/delete_file/${fileId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                showToast("Success", "File deleted successfully", "success");
+                
+                // Hide modal and reset button
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                const confirmButton = document.getElementById('confirmDelete');
+                confirmButton.disabled = false;
+                document.getElementById('deleteSpinner').classList.add('d-none');
+                
+                // Update total files count
+                const fileItem = document.querySelector(`.file-item [data-file-id="${fileId}"]`).closest('.file-item');
+                fileItem.remove();
+                
+                const totalFiles = document.querySelectorAll('.file-item').length;
+                if (totalFiles === 0) {
+                    location.reload(); // Reload to show empty state
+                }
+            })
+            .catch(error => {
+                showToast("Error", error.error || "Failed to delete file", "danger");
+                
+                // Reset button
+                const confirmButton = document.getElementById('confirmDelete');
+                confirmButton.disabled = false;
+                document.getElementById('deleteSpinner').classList.add('d-none');
+            });
+        }
+        
+        // Toast notification function
+        function showToast(title, message, type) {
+            const toastEl = document.getElementById('liveToast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMessage = document.getElementById('toast-message');
+            
+            if (toastEl && toastTitle && toastMessage) {
+                toastTitle.textContent = title;
+                toastMessage.textContent = message;
+                
+                toastEl.className = `toast bg-${type === 'danger' ? 'danger' : type} ${type === 'danger' || type === 'success' ? 'text-white' : ''}`;
+                
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+        }
+        
+        // Video preview modal handling
+        const videoModal = document.getElementById('videoPreviewModal');
+        const videoLinks = document.querySelectorAll('.video-link');
+        
+        if (videoModal && videoLinks.length > 0) {
+            videoLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const videoId = this.getAttribute('data-video-id');
+                    const videoType = this.getAttribute('data-video-type');
+                    const filename = this.getAttribute('data-filename');
+                    const videoSrc = this.getAttribute('href');
+                    
+                    // Set video source
+                    const videoSource = document.getElementById('videoSource');
+                    videoSource.setAttribute('src', videoSrc);
+                    videoSource.setAttribute('type', videoType);
+                    
+                    // Set modal title
+                    const videoTitle = videoModal.querySelector('.video-title');
+                    if (videoTitle) {
+                        videoTitle.textContent = filename;
+                    }
+                    
+                    // Set download button href
+                    const downloadBtn = document.getElementById('downloadVideoBtn');
+                    if (downloadBtn) {
+                        const downloadUrl = `/download/${videoId}`;
+                        downloadBtn.setAttribute('href', downloadUrl);
+                    }
+                    
+                    // Reset the video player when modal is opened
+                    const videoPlayer = document.getElementById('videoPlayer');
+                    if (videoPlayer) {
+                        videoPlayer.load();
+                    }
+                });
+            });
+            
+            // Stop video when modal is closed
+            videoModal.addEventListener('hidden.bs.modal', function () {
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer) {
+                    videoPlayer.pause();
+                    videoPlayer.currentTime = 0;
+                }
+            });
+        }
+        
+        // Download buttons (in file cards) handling
+        const downloadButtons = document.querySelectorAll('.download-btn');
+        if (downloadButtons) {
+            downloadButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const fileId = this.getAttribute('data-file-id');
+                    if (fileId) {
+                        window.location.href = `/download/${fileId}`;
+                    }
+                });
+            });
+        }
+        
+        // Initialize sorting with folders first (by default)
+        document.getElementById('fileSort').dispatchEvent(new Event('change'));
+    });
+</script>
+{% endblock %}
